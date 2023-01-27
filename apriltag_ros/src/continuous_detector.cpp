@@ -48,15 +48,25 @@ void ContinuousDetector::onInit ()
   it_ = std::shared_ptr<image_transport::ImageTransport>(
       new image_transport::ImageTransport(nh));
 
-  std::string transport_hint;
-  pnh.param<std::string>("transport_hint", transport_hint, "raw");
-
   int queue_size;
   pnh.param<int>("queue_size", queue_size, 1);
-  camera_image_subscriber_ =
-      it_->subscribeCamera("image_rect", queue_size,
-                          &ContinuousDetector::imageCallback, this,
-                          image_transport::TransportHints(transport_hint));
+
+  std::string image_topic;
+  std::string transport_hint;
+  pnh.getParam("image_topic", image_topic);
+  pnh.getParam("transport_hint", transport_hint);
+
+  std::cout << "[ContinuousDetector] image topic is " << image_topic << "\n";
+
+//  camera_image_subscriber_ =
+//      it_->subscribeCamera(image_topic, queue_size,
+//                          &ContinuousDetector::imageCallback, this,
+//                          image_transport::TransportHints(transport_hint));
+
+  image_subscriber_ = it_->subscribe(
+      image_topic, queue_size, &ContinuousDetector::imageCallback, this,
+      image_transport::TransportHints(transport_hint));
+
   tag_detections_publisher_ =
       nh.advertise<AprilTagDetectionArray>("tag_detections", 1);
   if (draw_tag_detections_image_)
@@ -66,8 +76,7 @@ void ContinuousDetector::onInit ()
 }
 
 void ContinuousDetector::imageCallback (
-    const sensor_msgs::ImageConstPtr& image_rect,
-    const sensor_msgs::CameraInfoConstPtr& camera_info)
+    const sensor_msgs::ImageConstPtr& image_rect)
 {
   // Lazy updates:
   // When there are no subscribers _and_ when tf is not published,
@@ -92,9 +101,28 @@ void ContinuousDetector::imageCallback (
     return;
   }
 
+  // this need to parsed from a yaml file and load as equidistance model
+  sensor_msgs::CameraInfo camera_info;
+  camera_info.header.stamp = image_rect->header.stamp;
+  camera_info.height = 720;
+  camera_info.width = 540;
+  camera_info.distortion_model = "plumb_bob";
+  std::vector<double> D{-0.0364, -0.0057, 0.0014, -0.0002};
+  camera_info.D = D;
+  double fx = 352;
+  double fy = 351;
+  double cx = 355;
+  double cy = 262;
+  boost::array<double, 9> K = {fx, 0, cx, 0, fy, cy, 0, 0, 1};
+  camera_info.K = K;
+  boost::array<double, 12> P = {fx, 0, cx, 0, 0, fy, cy, 0, 0, 0, 1, 0};
+  camera_info.P = P;
+
+  sensor_msgs::CameraInfoConstPtr camera_info_const =
+      boost::make_shared<sensor_msgs::CameraInfo>(camera_info);
   // Publish detected tags in the image by AprilTag 2
   tag_detections_publisher_.publish(
-      tag_detector_->detectTags(cv_image_,camera_info));
+      tag_detector_->detectTags(cv_image_, camera_info_const));
 
   // Publish the camera image overlaid by outlines of the detected tags and
   // their payload values

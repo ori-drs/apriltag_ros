@@ -60,8 +60,7 @@ class ContinuousDetector: public nodelet::Nodelet
 
   void onInit();
 
-  void imageCallback(const sensor_msgs::ImageConstPtr& image_rect,
-                     const sensor_msgs::CameraInfoConstPtr& camera_info);
+  void imageCallback(const sensor_msgs::ImageConstPtr& image_rect);
 
  private:
   std::shared_ptr<TagDetector> tag_detector_;
@@ -70,6 +69,7 @@ class ContinuousDetector: public nodelet::Nodelet
 
   std::shared_ptr<image_transport::ImageTransport> it_;
   image_transport::CameraSubscriber camera_image_subscriber_;
+  image_transport::Subscriber image_subscriber_;
   image_transport::Publisher tag_detections_image_publisher_;
   ros::Publisher tag_detections_publisher_;
 };
