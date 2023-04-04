@@ -96,7 +96,7 @@ void ContinuousDetector::imageCallback (
 
   // Publish detected tags in the image by AprilTag 2
   tag_detections_publisher_.publish(
-      tag_detector_->detectTags(cv_image_, camera_info));
+      tag_detector_->detectTags(cv_image_,camera_info));
 
   // Publish the camera image overlaid by outlines of the detected tags and
   // their payload values
