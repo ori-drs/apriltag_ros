@@ -3,14 +3,16 @@
   <arg name="launch_prefix" default="" />
 
   <!-- configure camera input -->
-  <arg name="camera_name" default="/alphasense_driver_ros" />
-  <arg name="image_topic" default="/cam1/mono_rect/image" /> <!-- camera info would be  /cam1/mono_rect/camera_info -->
-  <arg name="queue_size" default="10" />
-  <arg name="transport_hint" default="compressed" />
+  <arg name="camera_name" default="/camera_rect" />
+  <arg name="image_topic" default="image_rect" />
+  <arg name="queue_size" default="1" />
 
   <!-- apriltag_ros continuous detection node -->
   <node pkg="apriltag_ros" type="apriltag_ros_continuous_node" name="apriltag_ros_continuous_node" clear_params="true" output="screen" launch-prefix="$(arg launch_prefix)">
     <!-- Remap topics from those used in code to those on the ROS network -->
+    <remap from="image_rect" to="$(arg camera_name)/$(arg image_topic)" />
+    <remap from="camera_info" to="$(arg camera_name)/camera_info" />
+
     <param name="image_topic" type="string" value="$(arg camera_name)/$(arg image_topic)" />
     <param name="transport_hint" type="string" value="$(arg transport_hint)" />
 
